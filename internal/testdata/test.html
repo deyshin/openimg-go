@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Prrrrroxy Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 2rem;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(400px, 1fr) 2fr;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .original {
+            position: sticky;
+            top: 2rem;
+        }
+
+        .original img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .transformations {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .image-container {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .image-container:hover {
+            transform: translateY(-2px);
+        }
+
+        .image-container h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #444;
+            text-align: center;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .params {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #f8f8f8;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #666;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .raw-url {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #e8f0fe;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: #1a73e8;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Error states */
+        .error {
+            border: 2px solid #ff5757;
+            background: #fff8f8;
+        }
+
+        .error h2 {
+            color: #d63030;
+        }
+
+        .error-message {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #ffe5e5;
+            border-radius: 4px;
+            color: #d63030;
+            font-size: 0.9rem;
+        }
+
+        /* Loading state */
+        .loading img {
+            opacity: 0.5;
+        }
+
+        .loading::after {
+            content: "Loading...";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+            .original {
+                position: static;
+            }
+        }
+    </style>
+    <script>
+        // Simple reload functionality
+        (function() {
+            var ws = null;
+            function connect() {
+                ws = new WebSocket('ws://localhost:8080/ws');
+                ws.onmessage = function(e) {
+                    if (e.data === 'reload') window.location.reload();
+                };
+                ws.onclose = function() {
+                    setTimeout(connect, 1000);
+                };
+            }
+            connect();
+        })();
+
+        // Handle image loading errors
+        function handleImageError(img) {
+            const container = img.closest('.image-container');
+            container.classList.add('error');
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'error-message';
+            errorMsg.textContent = 'Failed to load or transform image';
+            container.appendChild(errorMsg);
+        }
+
+        // Handle image loading state
+        function handleImageLoading(img) {
+            const container = img.closest('.image-container');
+            container.classList.add('loading');
+            img.onload = () => container.classList.remove('loading');
+        }
+    </script>
+</head>
+<body>
+    <h1>OpenImg Test Gallery</h1>
+    <div class="layout">
+        <div class="original">
+            <h2>Original Image</h2>
+            <img src="https://picsum.photos/800/600"
+                 onerror="handleImageError(this)"
+                 onloadstart="handleImageLoading(this)" />
+            <div class="params">No transformation</div>
+            <div class="raw-url">GET https://picsum.photos/800/600</div>
+        </div>
+
+        <div class="transformations">
+            <div class="image-container">
+                <h2>Resized (200x200)</h2>
+                <img src="http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200"
+                     onerror="handleImageError(this)"
+                     onloadstart="handleImageLoading(this)" />
+                <div class="params">w=200, h=200</div>
+                <div class="raw-url">GET http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200</div>
+            </div>
+
+            <div class="image-container">
+                <h2>Cover (200x200)</h2>
+                <img src="http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&fit=cover"
+                     onerror="handleImageError(this)"
+                     onloadstart="handleImageLoading(this)" />
+                <div class="params">w=200, h=200, fit=cover</div>
+                <div class="raw-url">GET http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&fit=cover</div>
+            </div>
+
+            <div class="image-container">
+                <h2>Contain (200x200)</h2>
+                <img src="http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&fit=contain"
+                     onerror="handleImageError(this)"
+                     onloadstart="handleImageLoading(this)" />
+                <div class="params">w=200, h=200, fit=contain</div>
+                <div class="raw-url">GET http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&fit=contain</div>
+            </div>
+
+            <div class="image-container">
+                <h2>Low Quality JPEG</h2>
+                <img src="http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&q=20"
+                     onerror="handleImageError(this)"
+                     onloadstart="handleImageLoading(this)" />
+                <div class="params">w=200, h=200, q=20</div>
+                <div class="raw-url">GET http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&q=20</div>
+            </div>
+
+            <div class="image-container">
+                <h2>PNG Format</h2>
+                <img src="http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&fmt=png"
+                     onerror="handleImageError(this)"
+                     onloadstart="handleImageLoading(this)" />
+                <div class="params">w=200, h=200, fmt=png</div>
+                <div class="raw-url">GET http://localhost:8080/api/image?url=https://picsum.photos/800/600&w=200&h=200&fmt=png</div>
+            </div>
+
+            <!-- Example of an error state -->
+            <div class="image-container">
+                <h2>Invalid URL (Error Example)</h2>
+                <img src="http://localhost:8080/api/image?url=invalid-url&w=200&h=200"
+                     onerror="handleImageError(this)"
+                     onloadstart="handleImageLoading(this)" />
+                <div class="params">Invalid URL parameter</div>
+                <div class="raw-url">GET http://localhost:8080/api/image?url=invalid-url&w=200&h=200</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

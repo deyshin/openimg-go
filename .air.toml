@@ -4,5 +4,16 @@ tmp_dir = "tmp"
 [build]
 cmd = "go build -o ./tmp/main ."
 bin = "./tmp/main"
-include_ext = ["go", "tpl", "tmpl", "html"]
+include_ext = ["go", "tpl", "tmpl", "html", "css", "js"]
 exclude_dir = ["assets", "tmp", "vendor"]
+
+[misc]
+clean_on_exit = true
+
+# Add hooks to notify our dev server
+[build.hooks]
+pre = []
+post = ["date > tmp/reload-trigger"]
+
+[build.env]
+GO_ENV = "development"

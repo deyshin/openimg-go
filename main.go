@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/yourusername/openimg-go/internal/devserver"
 	"github.com/yourusername/openimg-go/internal/transform"
 )
 
@@ -23,11 +24,21 @@ func main() {
 	}
 
 	// Register routes
-	http.HandleFunc("/api/image", handler.ServeImage)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/image", handler.ServeImage)
+
+	// In development mode, serve test files
+	if os.Getenv("GO_ENV") != "production" {
+		log.Printf("Initializing development mode...")
+		if err := devserver.Setup(mux, port); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Development mode initialized")
+	}
 
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting server on %s", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)
 	}
 }
