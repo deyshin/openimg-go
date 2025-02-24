@@ -8,8 +8,10 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/yourusername/openimg-go/internal/cache"
 	"github.com/yourusername/openimg-go/internal/devserver"
 	"github.com/yourusername/openimg-go/internal/transform"
+	"github.com/yourusername/openimg-go/internal/validate"
 )
 
 func main() {
@@ -21,6 +23,7 @@ func main() {
 	// Create a new image handler
 	handler := &ImageHandler{
 		Client: &http.Client{},
+		Cache:  cache.New(),
 	}
 
 	// Register routes
@@ -45,6 +48,7 @@ func main() {
 
 type ImageHandler struct {
 	Client *http.Client
+	Cache  *cache.ImageCache
 }
 
 func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +68,8 @@ func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 
 	// Get image URL and transformation parameters
 	imageURL := r.URL.Query().Get("url")
-	if imageURL == "" {
-		http.Error(w, "Missing url parameter", http.StatusBadRequest)
+	if err := validate.URL(imageURL); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -76,9 +80,28 @@ func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	format := r.URL.Query().Get("fmt")
 	fit := r.URL.Query().Get("fit")
 
+	if err := validate.ImageOptions(width, height, quality, format, fit); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Validate parameters
 	if quality < 1 || quality > 100 {
 		quality = 85 // default quality
+	}
+
+	// Generate cache key
+	cacheKey := cache.GenerateKey(imageURL, width, height, quality, format, fit)
+
+	// Try to get from cache
+	if cached, found := h.Cache.Get(cacheKey); found {
+		contentType := "image/jpeg"
+		if format == "png" {
+			contentType = "image/png"
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Write(cached)
+		return
 	}
 
 	// Fetch the image
@@ -119,6 +142,10 @@ func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	if format == "png" {
 		contentType = "image/png"
 	}
+
+	// Store in cache
+	h.Cache.Set(cacheKey, transformed)
+
 	w.Header().Set("Content-Type", contentType)
 	w.Write(transformed)
 }

@@ -10,10 +10,20 @@ exclude_dir = ["assets", "tmp", "vendor"]
 [misc]
 clean_on_exit = true
 
-# Add hooks to notify our dev server
-[build.hooks]
-pre = []
-post = ["date > tmp/reload-trigger"]
+# Add logging for build events
+[build.log]
+time = true
+level = "debug"
 
-[build.env]
-GO_ENV = "development"
+# Add more detailed logging
+[log]
+main_only = false
+time = true
+
+[screen]
+clear_on_rebuild = true
+keep_scroll = false
+
+# Force build on start
+[build.start]
+force_build = true

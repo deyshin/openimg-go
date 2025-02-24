@@ -144,21 +144,6 @@
         }
     </style>
     <script>
-        // Simple reload functionality
-        (function() {
-            var ws = null;
-            function connect() {
-                ws = new WebSocket('ws://localhost:8080/ws');
-                ws.onmessage = function(e) {
-                    if (e.data === 'reload') window.location.reload();
-                };
-                ws.onclose = function() {
-                    setTimeout(connect, 1000);
-                };
-            }
-            connect();
-        })();
-
         // Handle image loading errors
         function handleImageError(img) {
             const container = img.closest('.image-container');
