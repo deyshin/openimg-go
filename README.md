@@ -46,7 +46,7 @@ System dependencies:
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/yourusername/openimg-go
+   git clone https://github.com/deyshin/openimg-go
    cd openimg-go
    ```
 
@@ -79,7 +79,6 @@ Or run normally:
 ## API Endpoints
 
 ### Images
-
 ```
 GET /api/image?url=<image_url>&w=<width>&h=<height>&fmt=<format>&q=<quality>&fit=<fit>
 http://localhost:8080/api/image?url=https://example.com/image.jpg&w=800&h=600&fmt=jpeg&q=80&fit=cover
