@@ -13,6 +13,14 @@ const (
 	MinHeight = 1
 )
 
+var ValidFitModes = []string{
+	"cover",
+	"contain",
+	"fill",
+	"inside",
+	"outside",
+}
+
 // ImageOptions validates transformation parameters
 func ImageOptions(width, height, quality int, format, fit string) error {
 	if width != 0 && (width < MinWidth || width > MaxWidth) {
@@ -24,11 +32,11 @@ func ImageOptions(width, height, quality int, format, fit string) error {
 	if quality != 0 && (quality < 1 || quality > 100) {
 		return fmt.Errorf("quality must be between 1 and 100")
 	}
-	if format != "" && format != "jpeg" && format != "png" {
-		return fmt.Errorf("format must be jpeg or png")
+	if format != "" && !isValidFormat(format) {
+		return fmt.Errorf("format must be one of: jpeg, jpg, png, avif, webp")
 	}
-	if fit != "" && fit != "cover" && fit != "contain" {
-		return fmt.Errorf("fit must be cover or contain")
+	if fit != "" && !contains(ValidFitModes, fit) {
+		return fmt.Errorf("fit must be one of: %v", ValidFitModes)
 	}
 	return nil
 }
@@ -49,4 +57,18 @@ func URL(rawURL string) error {
 	}
 
 	return nil
+}
+
+func contains(slice []string, item string) bool {
+	for _, i := range slice {
+		if i == item {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidFormat(format string) bool {
+	validFormats := []string{"jpeg", "jpg", "png", "avif", "webp"}
+	return contains(validFormats, format)
 }

@@ -4,7 +4,12 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	"strings"
 	"testing"
+
+	"encoding/base64"
+
+	"github.com/stretchr/testify/require"
 )
 
 // createTestImage creates a simple test image with the given dimensions
@@ -37,7 +42,7 @@ func TestTransform(t *testing.T) {
 		{
 			name:    "resize to specific dimensions",
 			img:     createTestImage(800, 600),
-			opts:    Options{Width: 400, Height: 300},
+			opts:    Options{Width: 400, Height: 300, Format: "jpeg"},
 			wantW:   400,
 			wantH:   300,
 			wantFmt: "jpeg",
@@ -59,6 +64,7 @@ func TestTransform(t *testing.T) {
 				Width:  400,
 				Height: 400,
 				Fit:    "cover",
+				Format: "jpeg",
 			},
 			wantW:   400,
 			wantH:   400,
@@ -72,10 +78,67 @@ func TestTransform(t *testing.T) {
 				Width:  400,
 				Height: 400,
 				Fit:    "contain",
+				Format: "jpeg",
 			},
 			wantW:   400,
-			wantH:   300, // maintains aspect ratio
+			wantH:   300,
 			wantFmt: "jpeg",
+			wantErr: false,
+		},
+		{
+			name: "convert to jpg",
+			img:  createTestImage(400, 300),
+			opts: Options{
+				Format:  "jpg",
+				Quality: 85,
+			},
+			wantW:   400,
+			wantH:   300,
+			wantFmt: "jpeg",
+		},
+		{
+			name: "convert to avif",
+			img:  createTestImage(400, 300),
+			opts: Options{
+				Format:  "avif",
+				Quality: 85,
+			},
+			wantW:   400,
+			wantH:   300,
+			wantFmt: "avif",
+		},
+		{
+			name: "convert to webp",
+			img:  createTestImage(400, 300),
+			opts: Options{
+				Format:  "webp",
+				Quality: 85,
+			},
+			wantW:   400,
+			wantH:   300,
+			wantFmt: "webp",
+		},
+		{
+			name: "convert to avif with default quality",
+			img:  createTestImage(400, 300),
+			opts: Options{
+				Format: "avif",
+			},
+			wantW:   400,
+			wantH:   300,
+			wantFmt: "avif",
+			wantErr: false,
+		},
+		{
+			name: "convert to avif with custom quality",
+			img:  createTestImage(400, 300),
+			opts: Options{
+				Format:  "avif",
+				Quality: 60,
+			},
+			wantW:   400,
+			wantH:   300,
+			wantFmt: "avif",
 			wantErr: false,
 		},
 	}
@@ -155,4 +218,92 @@ func TestTransform_Quality(t *testing.T) {
 			lastSize = currentSize
 		})
 	}
+}
+
+func TestGeneratePlaceholder(t *testing.T) {
+	// Create a test image
+	img := createTestImage(800, 600)
+
+	tests := []struct {
+		name    string
+		opts    PlaceholderOptions
+		wantErr bool
+	}{
+		{
+			name: "default options",
+			opts: PlaceholderOptions{},
+		},
+		{
+			name: "custom size",
+			opts: PlaceholderOptions{
+				Width:   20,
+				Height:  15,
+				Quality: 10,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GeneratePlaceholder(img, tt.opts)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GeneratePlaceholder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// Basic validation of the data URL
+			if !strings.HasPrefix(got, "data:image/jpeg;base64,") {
+				t.Errorf("GeneratePlaceholder() result doesn't start with data URL prefix")
+			}
+
+			// Decode base64 to verify it's valid
+			b64Data := strings.TrimPrefix(got, "data:image/jpeg;base64,")
+			_, err = base64.StdEncoding.DecodeString(b64Data)
+			if err != nil {
+				t.Errorf("GeneratePlaceholder() produced invalid base64: %v", err)
+			}
+		})
+	}
+}
+
+func TestAVIFQualityImpactsSize(t *testing.T) {
+	img := createTestImage(400, 300)
+
+	highQuality, err := Transform(img, Options{
+		Format:  "avif",
+		Quality: 90,
+	})
+	if err != nil {
+		t.Fatalf("Failed to transform high quality: %v", err)
+	}
+
+	lowQuality, err := Transform(img, Options{
+		Format:  "avif",
+		Quality: 30,
+	})
+	if err != nil {
+		t.Fatalf("Failed to transform low quality: %v", err)
+	}
+
+	if len(lowQuality) >= len(highQuality) {
+		t.Errorf("Expected low quality AVIF to be smaller than high quality. Low: %d bytes, High: %d bytes",
+			len(lowQuality), len(highQuality))
+	}
+}
+
+func TestTransform_ConvertToAVIF(t *testing.T) {
+	t.Run("convert_to_avif", func(t *testing.T) {
+		result, err := Transform(createTestImage(100, 100), Options{
+			Format: "avif",
+			Width:  100,
+			Height: 100,
+		})
+		require.NoError(t, err)
+
+		// Verify the result is actually AVIF
+		decoded, format, err := image.Decode(bytes.NewReader(result))
+		require.NoError(t, err)
+		require.NotNil(t, decoded)
+		require.Equal(t, "avif", format)
+	})
 }
