@@ -30,43 +30,87 @@ Install Go (1.21 or later)
 
 System dependencies:
 - macOS:
+
   ```bash
   brew install aom  # Required for AVIF support
   ```
+
 - Ubuntu/Debian:
+
   ```bash
   sudo apt-get install libaom-dev  # Required for AVIF support
   ```
-bash
-Clone the repository
-git clone https://github.com/yourusername/openimg-go
-cd openimg-go
-Install dependencies
-go mod download
-bash
-Install Air for hot reloading (optional)
-go install github.com/cosmtrek/air@latest
-Run with hot reloading
-air
-Or run normally
-go run main.go
-Images
+
+### Installation
+
+1. Clone the repository
+
+   ```bash
+   git clone https://github.com/yourusername/openimg-go
+   cd openimg-go
+   ```
+
+2. Install dependencies
+
+   ```bash
+   go mod download
+   ```
+
+3. Install Air for hot reloading (optional)
+
+   ```bash
+   go install github.com/cosmtrek/air@latest
+   ```
+
+### Running the Server
+
+Run with hot reloading:
+
+  ```bash
+  air
+  ```
+
+Or run normally:
+
+  ```bash
+  go run main.go
+  ```
+
+## API Endpoints
+
+### Images
+
+```
 GET /api/image?url=<image_url>&w=<width>&h=<height>&fmt=<format>&q=<quality>&fit=<fit>
-:
 http://localhost:8080/api/image?url=https://example.com/image.jpg&w=800&h=600&fmt=jpeg&q=80&fit=cover
-Metadata
+```
+
+### Metadata
+
+```
 GET /api/image?url=<image_url>&metadata=true
-:
-json
+```
+
+Example Response:
+
+```json
 {
 "width": 800,
 "height": 600,
 "format": "jpeg",
 "mimeType": "image/jpeg"
 }
-Placeholder
+```
+
+### Placeholder
+
+```
 GET /api/image?url=<image_url>&placeholder=true&w=<width>&h=<height>&q=<quality>
-Structure
+```
+
+### Structure
+
+```
 .
 ├── main.go # Server and handler implementation
 ├── internal/
@@ -77,15 +121,22 @@ Structure
 │ ├── validate/ # Input validation
 │ └── testdata/ # Test files and examples
 └── .air.toml # Air configuration for hot reloading
-bash
-Run all tests
+```
+
+### Running Tests
+
+```bash
+# Run all tests
 CGO_CFLAGS="-Wno-xor-used-as-pow" go test -v ./...
-Run tests for specific package
+# Run tests for specific package
 CGO_CFLAGS="-Wno-xor-used-as-pow" go test -v ./internal/transform
 go test -v ./internal/metadata
 go test -v ./internal/validate
 go test -v ./internal/cache
-bash
+```
+
+### Running the Server
+
+```bash
 GO_ENV=development go run main.go
-.
-This README:
+```
