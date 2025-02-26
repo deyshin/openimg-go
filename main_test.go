@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/yourusername/openimg-go/internal/cache"
 )
@@ -11,7 +12,7 @@ import (
 func TestImageHandler_ServeImage(t *testing.T) {
 	handler := &ImageHandler{
 		Client: &http.Client{},
-		Cache:  cache.New(),
+		Cache:  cache.NewMemoryCache(100, time.Hour),
 	}
 
 	tests := []struct {
@@ -67,7 +68,7 @@ func TestImageHandler_ServeImage(t *testing.T) {
 func TestImageHandler_MethodNotAllowed(t *testing.T) {
 	handler := &ImageHandler{
 		Client: &http.Client{},
-		Cache:  cache.New(),
+		Cache:  cache.NewMemoryCache(100, time.Hour),
 	}
 
 	methods := []string{"POST", "PUT", "DELETE", "PATCH"}

@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"image"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/yourusername/openimg-go/internal/cache"
 	"github.com/yourusername/openimg-go/internal/devserver"
@@ -17,6 +20,31 @@ import (
 )
 
 func main() {
+	var cacheOpts string
+	flag.StringVar(&cacheOpts, "cache", "", "Cache configuration (memory:100:4h, /tmp/cache, redis://localhost, or none)")
+	flag.Parse()
+
+	var c cache.Cache
+	switch {
+	case cacheOpts == "none" || cacheOpts == "":
+		c = cache.NewNoopCache()
+	case strings.HasPrefix(cacheOpts, "memory"):
+		// Parse memory:size:ttl format
+		parts := strings.Split(cacheOpts, ":")
+		size := 100 // default 100MB
+		ttl := 4 * time.Hour
+		if len(parts) > 1 {
+			size, _ = strconv.Atoi(parts[1])
+		}
+		if len(parts) > 2 {
+			ttl, _ = time.ParseDuration(parts[2])
+		}
+		c = cache.NewMemoryCache(size, ttl)
+	default:
+		// Assume it's a disk path
+		c = cache.NewDiskCache(cacheOpts)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -25,7 +53,7 @@ func main() {
 	// Create a new image handler
 	handler := &ImageHandler{
 		Client: &http.Client{},
-		Cache:  cache.New(),
+		Cache:  c,
 	}
 
 	// Register routes
@@ -50,7 +78,7 @@ func main() {
 
 type ImageHandler struct {
 	Client *http.Client
-	Cache  *cache.ImageCache
+	Cache  cache.Cache
 }
 
 func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +136,7 @@ func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	cacheKey := cache.GenerateKey(imageURL, width, height, quality, format, fit)
 
 	// Try to get from cache
-	if cached, found := h.Cache.Get(cacheKey); found {
+	if cached, err := h.Cache.Get(cacheKey); err == nil {
 		contentType := "image/png"
 		switch format {
 		case "jpg", "jpeg":
@@ -216,7 +244,7 @@ func (h *ImageHandler) servePlaceholder(w http.ResponseWriter, r *http.Request) 
 	cacheKey := cache.GenerateKey(imageURL, width, height, quality, "placeholder", "")
 
 	// Try to get from cache
-	if cached, found := h.Cache.Get(cacheKey); found {
+	if cached, err := h.Cache.Get(cacheKey); err == nil {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write(cached)
 		return

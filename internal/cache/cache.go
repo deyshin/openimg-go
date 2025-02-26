@@ -1,46 +1,41 @@
 package cache
 
 import (
-	"fmt"
-	"sync"
+	"errors"
 	"time"
 
-	gocache "github.com/patrickmn/go-cache"
+	"github.com/coocood/freecache"
 )
 
-type ImageCache struct {
-	cache *gocache.Cache
-	mu    sync.RWMutex
+var ErrNotFound = errors.New("item not found in cache")
+
+type Cache interface {
+	Get(key string) ([]byte, error)
+	Set(key string, value []byte) error
 }
 
-// New creates a new ImageCache with default expiration of 1 hour and cleanup every 2 hours
-func New() *ImageCache {
-	return &ImageCache{
-		cache: gocache.New(1*time.Hour, 2*time.Hour),
+// Package-level constructor functions
+func NewMemoryCache(sizeMB int, ttl time.Duration) Cache {
+	sizeBytes := sizeMB * 1024 * 1024
+	return &MemoryCache{
+		cache: freecache.NewCache(sizeBytes),
 	}
 }
 
-// Get retrieves an image from the cache
-func (c *ImageCache) Get(key string) ([]byte, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func NewNoopCache() Cache {
+	return &NoopCache{}
+}
 
-	if data, found := c.cache.Get(key); found {
-		return data.([]byte), true
+func NewDiskCache(path string) Cache {
+	return &DiskCache{
+		basePath: path,
 	}
-	return nil, false
 }
 
-// Set stores an image in the cache
-func (c *ImageCache) Set(key string, data []byte) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.cache.Set(key, data, gocache.DefaultExpiration)
-}
-
-// GenerateKey generates a cache key from the image URL and transformation options
-func GenerateKey(url string, width, height, quality int, format, fit string) string {
-	return fmt.Sprintf("%s_w%d_h%d_q%d_fmt%s_fit%s",
-		url, width, height, quality, format, fit)
+// Options represents cache configuration
+type Options struct {
+	Type string // "memory", "disk", "redis", "s3", "none"
+	Size int    // Size in MB for memory cache
+	TTL  time.Duration
+	Path string // Path for disk cache or URL for remote caches
 }
