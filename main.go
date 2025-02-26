@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourusername/openimg-go/internal/cache"
-	"github.com/yourusername/openimg-go/internal/devserver"
-	"github.com/yourusername/openimg-go/internal/metadata"
-	"github.com/yourusername/openimg-go/internal/transform"
-	"github.com/yourusername/openimg-go/internal/validate"
+	"github.com/deyshin/openimg-go/internal/cache"
+	"github.com/deyshin/openimg-go/internal/devserver"
+	"github.com/deyshin/openimg-go/internal/metadata"
+	"github.com/deyshin/openimg-go/internal/transform"
+	"github.com/deyshin/openimg-go/internal/validate"
 )
 
 func main() {

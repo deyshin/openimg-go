@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yourusername/openimg-go/internal/cache"
+	"github.com/deyshin/openimg-go/internal/cache"
 )
 
 func TestImageHandler_ServeImage(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/yourusername/openimg-go
+module github.com/deyshin/openimg-go
 
 go 1.22
 
