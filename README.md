@@ -59,7 +59,7 @@ System dependencies:
 3. Install Air for hot reloading (optional)
 
    ```bash
-   go install github.com/cosmtrek/air@latest
+   go install github.com/air-verse/air@latest
    ```
 
 ### Running the Server
@@ -75,6 +75,26 @@ Or run normally:
   ```bash
   go run main.go
   ```
+
+## Docker Setup
+
+### Building the Docker Image
+
+To build the Docker image, run the following command:
+
+```bash
+docker build -t openimg-go .
+```
+
+### Running the Docker Container
+
+To run the Docker container, use the following command:
+
+```bash
+docker run -p 8080:8080 openimg-go
+```
+
+The server will be available at `http://localhost:8080`.
 
 ## API Endpoints
 
@@ -139,3 +159,4 @@ go test -v ./internal/cache
 ```bash
 GO_ENV=development go run main.go
 ```
+````
